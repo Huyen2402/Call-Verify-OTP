@@ -35,7 +35,7 @@ const uploadImage = async (imagePath) => {
     try {
       // Upload the image
       const result = await cloudinary.uploader.upload(imagePath, options);
-      console.log(result);
+      console.log("result upload", result);
       return result.public_id;
     } catch (error) {
       console.error(error);
@@ -56,7 +56,7 @@ const getAssetInfo = async (publicId) => {
     try {
         // Get details about the asset
         const result = await cloudinary.api.resource(publicId, options);
-        console.log(result);
+        console.log("result",result);
         return result.colors;
         } catch (error) {
         console.error(error);
@@ -84,7 +84,7 @@ const createImageTag = (publicId) => {
       //   { background: backgroundColor },
       // ],
     );
-
+    
     return imageTag;
 };
    
@@ -115,7 +115,7 @@ const createImageTag = (publicId) => {
 // })();
 
 exports.uploadImage = async (req, res, next) => {
-  console.log(req);
+ 
   try {
     if(!req.files) {
         res.send({
@@ -124,7 +124,7 @@ exports.uploadImage = async (req, res, next) => {
         });
     } else {
         //Use the name of the input field (i.e. "avatar") to retrieve the uploaded file
-        let avatar = req.files.avatar;
+        let avatar = req.files.HinhAnh;
 
         const imagePath = avatar.name;
         avatar.mv('./uploads/' + avatar.name);
@@ -137,9 +137,9 @@ exports.uploadImage = async (req, res, next) => {
 
     // Create an image tag, using two of the colors in a transformation
     const imageTag = await createImageTag(publicId);
-
+    
     // Log the image tag to the console
-    console.log(imageTag);
+  
         //Use the mv() method to place the file in the upload directory (i.e. "uploads")
         // avatar.mv('./uploads/' + avatar.name);
 
