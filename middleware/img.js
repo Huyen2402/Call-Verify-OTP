@@ -1,11 +1,7 @@
 const cloudinary = require('cloudinary').v2;
 const config = require('../config/config')
 const fs = require('fs');
-// cloudinary.config({
-//     cloud_name: config.cloudinary.cloud_name,
-//     api_key: config.cloudinary.api_key,
-//     api_secret: config.cloudinary.api_secret
-//   });
+
 
 // Return "https" URLs by setting secure: true
 cloudinary.config({
@@ -35,7 +31,7 @@ const uploadImage = async (imagePath) => {
     try {
       // Upload the image
       const result = await cloudinary.uploader.upload(imagePath, options);
-      console.log("result upload", result);
+     
       return result.public_id;
     } catch (error) {
       console.error(error);
@@ -43,9 +39,6 @@ const uploadImage = async (imagePath) => {
 };
     
 
-// /////////////////////////////////////
-// // Gets details of an uploaded image
-// /////////////////////////////////////
 const getAssetInfo = async (publicId) => {
 
     // Return colors in the response
@@ -56,66 +49,21 @@ const getAssetInfo = async (publicId) => {
     try {
         // Get details about the asset
         const result = await cloudinary.api.resource(publicId, options);
-        console.log("result",result);
-        return result.colors;
+        console.log("getAssetInfo result URL",result.url);
+        return result.url;
         } catch (error) {
         console.error(error);
     }
 };
-   
 
-// //////////////////////////////////////////////////////////////
-// // Creates an HTML image tag with a transformation that
-// // results in a circular thumbnail crop of the image  
-// // focused on the faces, applying an outline of the  
-// // first color, and setting a background of the second color.
-// //////////////////////////////////////////////////////////////
 const createImageTag = (publicId) => {
-    
-    // Set the effect color and background color
-    // const [effectColor, backgroundColor] = colors;
-
-    // Create an image tag with transformations applied to the src URL
-    let imageTag = cloudinary.image(publicId
-      // transformation: [
-      //   { width: 250, height: 250, gravity: 'faces', crop: 'thumb' },
-      //   { radius: 'max' },
-      //   { effect: 'outline:10', color: effectColor },
-      //   { background: backgroundColor },
-      // ],
-    );
+    let imageTag = cloudinary.image(publicId);
     
     return imageTag;
 };
-   
-
-// //////////////////
-// //
-// // Main function
-// //
-// //////////////////
-// (async () => {
-
-//     // Set the image to upload
-//     // const imagePath = 'https://cloudinary-devs.github.io/cld-docs-assets/assets/images/happy_people.jpg';
-//  const imagePath = 'den4.jpg';
-
-//     // Upload the image
-//     const publicId = await uploadImage(imagePath);
-
-//     // Get the colors in the image
-//     const colors = await getAssetInfo(publicId);
-
-//     // Create an image tag, using two of the colors in a transformation
-//     const imageTag = await createImageTag(publicId);
-
-//     // Log the image tag to the console
-//     console.log(imageTag);
-
-// })();
 
 exports.uploadImage = async (req, res, next) => {
- 
+ const urlRes = []
   try {
     if(!req.files) {
         res.send({
@@ -123,7 +71,29 @@ exports.uploadImage = async (req, res, next) => {
             message: 'No file uploaded'
         });
     } else {
+      if(req.files.HinhAnh.length > 0){
+        for (let index = 0; index < req.files.HinhAnh.length; index++) {
+          let avatar = req.files.HinhAnh[index];
+          const imagePath = avatar.name;
+          avatar.mv('./uploads/' + avatar.name);
+          const publicId = await uploadImage('./uploads/'+imagePath);
+          fs.unlinkSync('./uploads/'+imagePath);
+          const url = await getAssetInfo(publicId);
+          console.log("url",url);
+
+          urlRes.push(url)
+
+        }
+        res.send({
+          status: true,
+          message: 'File is uploaded',
+          data: {
+              url: urlRes
+          }
+      });
+      }
         //Use the name of the input field (i.e. "avatar") to retrieve the uploaded file
+       else{
         let avatar = req.files.HinhAnh;
 
         const imagePath = avatar.name;
@@ -133,26 +103,21 @@ exports.uploadImage = async (req, res, next) => {
     const publicId = await uploadImage('./uploads/'+imagePath);
     fs.unlinkSync('./uploads/'+imagePath);
     // Get the colors in the image
-    const colors = await getAssetInfo(publicId);
-
+    const url = await getAssetInfo(publicId);
+    console.log("url",url);
     // Create an image tag, using two of the colors in a transformation
     const imageTag = await createImageTag(publicId);
-    
-    // Log the image tag to the console
-  
-        //Use the mv() method to place the file in the upload directory (i.e. "uploads")
-        // avatar.mv('./uploads/' + avatar.name);
-
-        //send response
         res.send({
             status: true,
             message: 'File is uploaded',
             data: {
                 name: avatar.name,
                 imageTag: imageTag,
-                size: avatar.size
+                size: avatar.size, 
+                url: url
             }
         });
+       }
     }
 } catch (err) {
     res.status(500).send(err);
